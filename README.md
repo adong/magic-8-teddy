@@ -2,12 +2,16 @@
 
 [![Magic 8: Teddy & Tommy title screen](docs/screenshot.jpg)](https://adong.github.io/magic-8-teddy/)
 
+Ask a question and shake the ball, and the brothers answer.
+
+**中文：** 问个问题，摇一摇魔法球，兄弟俩来回答。
+
 Press **?** any time (or tap the round **?** button on the left edge) to see the keys. The game waits while you look.
 Tap the language button under it (the A文 icon) to switch between English and 中文; the dashboard and every game remember the choice.
 
 A glossy 3D magic 8-ball starring Teddy and Tommy. Ask it anything (or just shake it), and the brother you picked shakes the ball, waits for the blue triangle to float up through the liquid, then reacts: his signature move for a YES, a shrug for a maybe, and a playful head shake for a no. Answers are read aloud in the brothers' voices.
 
-The name lives in one place, [js/title.js](js/title.js), so it's easy to rename. "Magic 8: Teddy & Tommy" is a working title.
+The name lives in one place, [js/title.js](js/title.js), so it's easy to rename.
 
 ## Play
 
