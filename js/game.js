@@ -3,8 +3,10 @@
      shake   - the answering brother steps up and shakes the ball (longer if you keep dragging it)
      reveal  - he steps back, the ball turns its window to you, the triangle floats up
      react   - yes: his signature move + confetti; maybe: a shrug or head scratch; no: a playful head shake
-   The companion (the other brother, Kit.roster.buddyFor) comes when you call him: he gives a second opinion,
-   does his signature move, hands over a treat and waves bye. Call him as often as you like.
+   One brother is on stage at a time. In 'both' they take turns: after each answer he waves and runs off, and the
+   other runs in for the next question.
+   The companion (the brother who isn't on stage, Kit.roster.buddyFor) comes when you call him: he gives a second
+   opinion, does his signature move, hands over a treat and waves bye. Call him as often as you like.
    Test hooks for the Browser pane are at the bottom (window.magic8). */
 (function () {
   'use strict';
@@ -169,6 +171,8 @@
     who: store.get('who', 'teddy'), // 'teddy' | 'tommy' | 'both'
     pendingWho: null,
     turn: 0, // in 'both' mode: whose turn (even: Teddy, odd: Tommy)
+    star: 'teddy', // the brother on stage
+    swapAt: null, // 'both': when (G.time) the brothers swap after an answer
     state: 'idle', // idle | shaking | revealing | shown
     q: null, // the question in progress
     last: null, // the last answered question
@@ -183,39 +187,59 @@
   if (!['teddy', 'tommy', 'both'].includes(G.who)) G.who = 'teddy';
 
   const answererNext = () => (G.who === 'both' ? (G.turn % 2 ? 'tommy' : 'teddy') : G.who);
-  // the brother answering now, else the one who answered last, else whoever's turn it is
-  const lastAnswerer = () => {
-    if (G.q && stage[G.q.who].visible) return G.q.who;
-    return G.last && stage[G.last.who].visible ? G.last.who : answererNext();
-  };
-  const companionId = () => Kit.roster.buddyFor(lastAnswerer());
-  const homeOf = (id) => (G.who === 'both' && id === 'tommy' ? L.right : L.left);
+  // the companion is always the brother who isn't on stage
+  const companionId = () => Kit.roster.buddyFor(G.star);
 
-  // Put the brothers on stage for the current choice of who answers.
+  // The companion's model, rebuilt only when he changes (and never mid-visit).
+  function buildBuddy() {
+    const bid = companionId();
+    if (buddyBuiltFor === bid || buddyActor.visible) return;
+    const e = Kit.roster.get(bid);
+    buddyActor.set(e, e.buddyScale || 0.8, true);
+    buddyBuiltFor = bid;
+  }
+
+  // Put the brother whose turn it is on stage.
   function applyWho() {
-    dismissVisit(true);
-    const both = G.who === 'both';
+    dismissVisit();
+    G.swapAt = null;
+    G.star = answererNext();
     for (const id of ['teddy', 'tommy']) {
       const a = stage[id];
-      const on = both || G.who === id;
-      a.visible = on;
-      if (!on) continue;
-      a.set(Kit.roster.get(id), 1, both);
-      const h = homeOf(id);
-      a.place(h.x, h.z);
+      a.visible = id === G.star;
+      if (!a.visible) continue;
+      a.set(Kit.roster.get(id), 1, false);
+      a.place(L.left.x, L.left.z);
       a.look(0, L.camZ);
     }
-    if (!both) {
-      const bid = Kit.roster.buddyFor(G.who);
-      if (buddyBuiltFor !== bid) {
-        const e = Kit.roster.get(bid);
-        buddyActor.set(e, e.buddyScale || 0.8, true);
-        buddyBuiltFor = bid;
-      }
-    }
-    buddyActor.visible = false;
-    if (G.last && !stage[G.last.who].visible) G.last = null;
+    buildBuddy();
+    if (G.last && G.last.who !== G.star && G.who !== 'both') G.last = null;
     refreshUI();
+  }
+
+  // 'both': the brother on stage waves and runs off, and the one whose turn it is runs in.
+  function swapBrothers() {
+    G.swapAt = null;
+    const next = answererNext();
+    if (next === G.star) return null;
+    const out = stage[G.star], inn = stage[next];
+    out.play('wave', 3);
+    out.look(null);
+    out.moveTo(-L.offX, out.z, 5, () => { out.visible = false; });
+    if (!inn.person || inn.entry.id !== next) inn.set(Kit.roster.get(next), 1, false);
+    inn.visible = true;
+    inn.place(-L.offX, L.left.z + 0.7); // a lane nearer the camera, so they pass each other
+    inn.play('idle', 0);
+    inn.look(0, L.camZ);
+    inn.moveTo(L.left.x, L.left.z, 5.5, () => {
+      inn.play(Kit.roster.signature(inn.entry, 'hello'), 1.5);
+      inn.emote('👋', 1.2);
+    });
+    G.star = next;
+    buildBuddy();
+    M8.sfx.whoosh();
+    refreshUI();
+    return inn;
   }
 
   function setWho(w, fromUser) {
@@ -295,15 +319,9 @@
     fx.court.place(0, L.ballY + R + 0.75, 0.2);
 
     // keep everyone on their marks
-    if (G.state !== 'shaking' && G.state !== 'revealing') {
-      for (const id of ['teddy', 'tommy']) {
-        const a = stage[id];
-        if (!a.visible) continue;
-        const h = homeOf(id);
-        a.place(h.x, h.z);
-      }
-    }
-    if (visit.on && visit.runs && !visit.leaving) buddyActor.place(L.right.x, L.right.z);
+    const star = stage[G.star];
+    if (G.state !== 'shaking' && G.state !== 'revealing' && star.visible && !star.moving) star.place(L.left.x, L.left.z);
+    if (visit.on && !visit.leaving && !buddyActor.moving) buddyActor.place(L.right.x, L.right.z);
     for (const a of [stage.teddy, stage.tommy, buddyActor]) a.look(0, L.camZ);
   }
 
@@ -331,9 +349,9 @@
     return { text, mood };
   }
 
-  // the spot next to the ball where he can reach it
-  function shakeSpot(a) {
-    const hx = a.x, hz = a.z, d = Math.hypot(hx, hz) || 1, r = R + 0.6;
+  // the spot next to the ball (on his side of it) where he can reach it
+  function shakeSpot() {
+    const hx = L.left.x, hz = L.left.z, d = Math.hypot(hx, hz) || 1, r = R + 0.6;
     return { x: (hx / d) * r, z: (hz / d) * r };
   }
 
@@ -349,9 +367,13 @@
       return false;
     }
     if (G.pendingWho) setWho(G.pendingWho);
-    const who = opts.who && stage[opts.who].visible ? opts.who : answererNext();
+    // 'both': if it's the other brother's turn and they haven't swapped yet, swap now
+    if (G.who === 'both' && answererNext() !== G.star) {
+      if (visit.on && visit.id === answererNext()) poofVisit();
+      swapBrothers();
+    }
+    const who = G.star;
     const a = stage[who];
-    if (visit.on && visit.a === a) dismissVisit(); // both on stage: his turn ends his visit
     const ans = pickAnswer(who, opts.mood, opts.i);
     const qText = String(text || '').trim().slice(0, 80);
     G.q = { t: 0, who, a, entry: Kit.roster.get(who), text: qText, answer: ans.text, mood: ans.mood, shakeFor: opts.quick ? 0.6 : 1.6, extra: 0, holding: !!opts.holding, released: 0, slosh: 0 };
@@ -364,9 +386,12 @@
     hideBubble('answer');
     ball.shake(true);
     M8.voice.stop();
-    const spot = shakeSpot(a);
+    const spot = shakeSpot();
+    const far = Math.hypot(spot.x - a.x, spot.z - a.z);
+    const speed = far > 1.5 ? 5.5 : 2.2; // still running in from the side: keep running
+    G.q.shakeFor = Math.max(G.q.shakeFor, far / (speed * a.scale) + 0.8);
     a.play('idle', 0);
-    a.moveTo(spot.x, spot.z, 2.2, () => a.play('shake', 30));
+    a.moveTo(spot.x, spot.z, speed, () => a.play('shake', 30));
     a.look(0, 0);
     // everyone else watches the ball
     for (const o of [stage.teddy, stage.tommy, buddyActor]) {
@@ -392,9 +417,8 @@
         ball.shake(false);
         G.state = 'revealing';
         q.t0 = q.t;
-        const h = homeOf(q.who);
         q.a.play('watch', 3.2);
-        q.a.moveTo(h.x, h.z, 2.2);
+        q.a.moveTo(L.left.x, L.left.z, 2.2);
         q.a.look(0, L.camZ * 0.4);
       }
       return;
@@ -437,14 +461,6 @@
       a.emote(pick(['🙅', '😜']), 2.1);
       M8.sfx.no();
     }
-    // the other brother joins in when both are on stage
-    if (G.who === 'both') {
-      const o = stage[Kit.roster.buddyFor(who)];
-      if (o.visible && !visit.on) {
-        o.look(0, L.camZ);
-        if (q.mood === 'yes') o.play('cheer', 1.0);
-      }
-    }
     showBubble('answer', q.entry, q.answer, q.mood, q.text);
     M8.voice.say(q.answer, who);
     addHistory({ who, q: q.text, a: q.answer, mood: q.mood, ops: [] });
@@ -455,7 +471,10 @@
     G.last = q;
     G.q = null;
     G.idleT = 0;
-    if (G.who === 'both') G.turn++;
+    if (G.who === 'both') {
+      G.turn++;
+      G.swapAt = G.time + 1.8; // let the answer sink in, then swap (after any second-opinion visit)
+    }
     if (G.pendingWho) setWho(G.pendingWho);
     refreshUI();
   }
@@ -463,17 +482,18 @@
   // ---------------------------------------------------------------- the companion's visit
   // Times (seconds into his visit) for each beat of it.
   const V = { opinion: 1.4, sig: 3.0, give: 4.8, toss: 5.15, bye: 7.9, leave: 9.6 };
-  const visit = { on: false, t: 0, id: null, a: null, runs: true, said: false, sig: false, giving: false, tossed: false, bye: false, leaving: false, count: 0 };
+  const visit = { on: false, t: 0, id: null, a: null, said: false, sig: false, giving: false, tossed: false, bye: false, leaving: false };
   const flights = [];
 
   function callBuddy() {
     M8.sfx.click();
+    // the brothers swapped while he was on his way out: this call is for the other one
+    if (visit.on && visit.id !== companionId()) dismissVisit();
     if (!visit.on) return summon();
     // tapped again while he's here: another opinion and another treat
     const a = visit.a;
     Object.assign(visit, { t: V.opinion - 0.35, said: false, sig: false, giving: false, tossed: false, bye: false });
-    if (visit.leaving && visit.runs) {
-      visit.leaving = false;
+    if (visit.leaving) {
       a.play('idle', 0);
       a.moveTo(L.right.x, L.right.z, 5.5);
       visit.t = 0.4;
@@ -484,35 +504,36 @@
     return 'again';
   }
 
+  // He runs in from the right, at his smaller buddy size, with a name tag.
   function summon() {
+    buildBuddy();
     const id = companionId();
     const e = Kit.roster.get(id);
-    Object.assign(visit, { on: true, t: 0, id, e, said: false, sig: false, giving: false, tossed: false, bye: false, leaving: false, count: 0 });
-    if (G.who === 'both') {
-      visit.a = stage[id];
-      visit.runs = false;
-      visit.t = 0.9;
-      visit.a.play('cheer', 0.6);
-    } else {
-      visit.a = buddyActor;
-      visit.runs = true;
-      buddyActor.visible = true;
-      buddyActor.place(L.offX, L.right.z);
-      buddyActor.play('idle', 0);
-      buddyActor.moveTo(L.right.x, L.right.z, 5.5);
-    }
+    Object.assign(visit, { on: true, t: 0, id, e, a: buddyActor, said: false, sig: false, giving: false, tossed: false, bye: false, leaving: false });
+    buddyActor.visible = true;
+    buddyActor.place(L.offX, L.right.z);
+    buddyActor.play('idle', 0);
+    buddyActor.moveTo(L.right.x, L.right.z, 5.5);
     toast(`${e.name}'S HERE!`);
     M8.sfx.arrive();
     refreshUI();
     return 'summoned';
   }
 
-  function dismissVisit(now) {
+  function dismissVisit() {
     if (!visit.on) return;
     visit.on = false;
-    if (visit.runs || now) buddyActor.visible = false;
+    buddyActor.visible = false;
     hideBubble('buddy');
     refreshUI();
+  }
+
+  // 'both': it's his turn to answer while he's visiting, so he vanishes in a puff of sparkles (his full-size self
+  // runs in to take the turn)
+  function poofVisit() {
+    fx.sparkles.burst(buddyActor.head(), 0.4, 24, ['#ffffff', '#b48cff', '#ffd400']);
+    M8.sfx.pop();
+    dismissVisit();
   }
 
   function secondOpinion() {
@@ -520,7 +541,8 @@
     const lines = (ANSWERS.opinions && ANSWERS.opinions[e.id]) || {};
     const other = Kit.roster.get(Kit.roster.buddyFor(e.id));
     let line, mood = 'maybe';
-    if (!G.last) line = pick(lines.first && lines.first.length ? lines.first : ['Ask the ball something!']);
+    // he gives his opinion on the answer of the brother on stage; nothing to comment on yet: he cheers him on
+    if (!G.last || G.last.who !== G.star) line = pick(lines.first && lines.first.length ? lines.first : ['Ask the ball something!']);
     else {
       const agree = Math.random() < 0.55;
       const list = (agree ? lines.agree : lines.disagree) || [];
@@ -545,7 +567,7 @@
     // he waits for the ball to answer before he gives his opinion
     if (!(busy && !visit.said && visit.t >= V.opinion - 0.05)) visit.t += dt;
     const t = visit.t, e = visit.e;
-    const receiver = stage[lastAnswerer()];
+    const receiver = stage[G.star];
     if (!visit.leaving && !a.moving) {
       if (busy) a.look(0, 0); // watching the ball
       else if (visit.giving && !visit.bye) a.look(receiver.x, receiver.z);
@@ -577,15 +599,8 @@
     }
     if (!visit.leaving && t >= V.leave) {
       visit.leaving = true;
-      if (visit.runs) {
-        a.play('wave', 4);
-        a.moveTo(L.offX, a.z, 5, () => dismissVisit());
-      } else {
-        a.play('wave', 1.4);
-        a.look(0, L.camZ);
-        visit.on = false;
-        refreshUI();
-      }
+      a.play('wave', 4);
+      a.moveTo(L.offX, a.z, 5, () => dismissVisit());
     }
   }
 
@@ -684,7 +699,7 @@
     $('bubbles').prepend(el);
     setTimeout(() => el.remove(), 2600);
   }
-  const actorFor = (id) => (visit.on && visit.id === id && visit.runs ? buddyActor : stage[id]);
+  const actorFor = (id) => (visit.on && visit.id === id ? buddyActor : stage[id]);
 
   function addHistory(h) {
     G.history.unshift(h);
@@ -982,6 +997,8 @@
     fx.sparkles.update(dt);
     fx.confetti.update(dt);
     for (const s of stars) s.s.material.opacity = 0.55 + 0.45 * Math.sin(G.time * s.sp + s.ph);
+    // 'both': after an answer (and any second-opinion visit) the brothers swap
+    if (G.swapAt !== null && G.time >= G.swapAt && (G.state === 'shown' || G.state === 'idle') && !visit.on) swapBrothers();
     // after a while with nothing asked, the ball turns its "8" back to you
     if (G.state === 'shown' && !visit.on) {
       G.idleT += dt;
@@ -1075,7 +1092,8 @@
         who: G.who, state: G.state, turn: answererNext(), face: ball.face, triangle: +ball.triangle.toFixed(2),
         q: G.q && { who: G.q.who, mood: G.q.mood, answer: G.q.answer, t: +G.q.t.toFixed(2) },
         last: G.last && { who: G.last.who, mood: G.last.mood, answer: G.last.answer },
-        visit: visit.on ? { id: visit.id, t: +visit.t.toFixed(2), runs: visit.runs, tossed: visit.tossed, leaving: visit.leaving } : null,
+        star: G.star,
+        visit: visit.on ? { id: visit.id, t: +visit.t.toFixed(2), tossed: visit.tossed, leaving: visit.leaving } : null,
         companion: companionId(),
         poses: { teddy: stage.teddy.visible && stage.teddy.pose, tommy: stage.tommy.visible && stage.tommy.pose, buddy: buddyActor.visible && buddyActor.pose },
       };

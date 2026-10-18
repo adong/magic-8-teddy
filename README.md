@@ -17,7 +17,7 @@ Or open `index.html` by double-click, or send `dist/magic-8-teddy.html` (one fil
 | Type in "Ask Teddy & Tommy anything…" and press Enter | Ask a real question. Typing is optional. |
 | **🎱 SHAKE!** button, `Space` or `Enter` | Shake it |
 | Shake the iPad or phone | Shake it for real. On iPad/iPhone, tap **📳** once to allow motion. |
-| **TEDDY / BOTH / TOMMY** at the top, or `1` `2` `3` | Pick who answers. In Both, they take turns. |
+| **TEDDY / BOTH / TOMMY** at the top, or `1` `2` `3` | Pick who answers. In Both, they take turns: one brother is on stage at a time, and after each answer he waves and runs off while the other runs in for the next question. |
 | The orange portrait button or `T` | Call the other brother for a second opinion (see below) |
 | Tap a brother | He does his signature move |
 | 📜 or `H` | The last 8 questions and answers, with second opinions |
@@ -32,15 +32,15 @@ Or open `index.html` by double-click, or send `dist/magic-8-teddy.html` (one fil
 
 ### Companion mode: the second opinion
 
-The companion is always the other brother (`Kit.roster.buddyFor`): Tommy when Teddy answers, Teddy when Tommy answers. Call him as often as you like, with no cooldown. Each visit lasts about 10 seconds:
+The companion is always the brother who isn't on stage (`Kit.roster.buddyFor`): Tommy when Teddy is answering, Teddy when Tommy is. Call him as often as you like, with no cooldown. Each visit lasts about 10 seconds:
 
 1. He runs in at his smaller buddy size, with a name tag.
-2. He thinks for a second, then agrees or disagrees with a funny line (👍 or 🙃). If the ball is still answering, he waits for it.
+2. He thinks for a second, then agrees or disagrees with a funny line (👍 or 🙃). If the ball is still answering, he waits for it. If the brother on stage hasn't answered anything yet, he cheers him on instead.
 3. He does his signature move.
 4. He tosses the answering brother a treat: 🍦 💧 🧃 🍪 🍉 or 🍌, with a toast like "🍦 ICE CREAM FROM TOMMY!". The brother catches it and cheers.
 5. He does his goodbye move (Teddy's jump shot, Tommy's Y), then waves and runs off.
 
-Tapping again while he's there gets another opinion and another treat. If he's already leaving, he runs back. In **Both**, the companion is already on stage, so he does all of this from where he stands.
+Tapping again while he's there gets another opinion and another treat. If he's already leaving, he runs back. In **Both**, the brothers swap only after his visit ends. If you ask the next question while he's visiting and it's his turn, he vanishes in a puff of sparkles and his full-size self runs in to answer.
 
 ## Changing what they say
 
