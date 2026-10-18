@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1d1250">
+<script src="js/title.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --yellow: #ffd400;
+    --pink: #ff3d7f;
+    --cyan: #18d4ff;
+    --mint: #3fe0b0;
+    --violet: #b48cff;
+    --ink: #14121f;
+    --display: 'Bungee', 'Arial Black', Impact, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #1d1250; color: #fff;
+    font-family: 'Rubik', system-ui, -apple-system, sans-serif;
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  }
+  #c, #confetti { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #c { cursor: pointer; }
+  #confetti { pointer-events: none; z-index: 7; }
+  .hidden { display: none !important; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  kbd {
+    display: inline-grid; place-items: center; min-width: 26px; height: 24px; padding: 0 6px; margin: 0 2px;
+    font: 700 13px/1 system-ui, sans-serif; color: var(--ink); background: #fff; border-radius: 7px; box-shadow: 0 3px 0 #8a7fb0;
+  }
+
+  /* ---------- header: logo, who answers, icons ---------- */
+  #top {
+    position: fixed; left: 0; right: 0; top: 0; z-index: 5; pointer-events: none;
+    display: grid; grid-template-columns: 1fr auto 1fr; grid-template-areas: "logo who icons"; align-items: center; gap: 8px 12px;
+    padding: max(10px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 4px max(14px, env(safe-area-inset-left));
+  }
+  #top > * { pointer-events: auto; }
+  .logo { grid-area: logo; justify-self: start; transform: rotate(-3deg); line-height: 0.95; pointer-events: none; }
+  .logo span { display: block; font-family: var(--display); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; white-space: nowrap; }
+  .logo .l1 { font-size: clamp(28px, 4.2vw, 46px); color: var(--yellow); text-shadow: 0 4px 0 var(--pink), 0 7px 0 var(--ink); }
+  .logo .l2 { font-size: clamp(14px, 1.9vw, 21px); color: var(--cyan); margin: 6px 0 0 0.7em; text-shadow: 0 3px 0 var(--ink); -webkit-text-stroke-width: 2px; }
+  #who { grid-area: who; display: flex; gap: 8px; padding: 6px; border-radius: 22px; background: rgba(20, 18, 31, 0.45); border: 2px solid rgba(255, 255, 255, 0.25); }
+  #who button {
+    display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 8px 5px; border-radius: 16px;
+    border: 3px solid transparent; transition: transform 0.12s, background 0.12s; min-width: 74px;
+  }
+  #who img { width: 54px; height: 54px; border-radius: 50%; background: radial-gradient(circle at 50% 38%, #fff6d8, #b48cff); border: 3px solid var(--ink); object-fit: cover; }
+  #who .duo { display: flex; }
+  #who .duo img { width: 44px; height: 44px; margin-top: 5px; }
+  #who .duo img + img { margin-left: -16px; }
+  #who b { font-family: var(--display); font-weight: 400; font-size: 12px; letter-spacing: 1px; text-shadow: 0 2px 0 var(--ink); }
+  #who button:hover { background: rgba(255, 255, 255, 0.12); }
+  #who button.on { background: var(--yellow); border-color: var(--ink); color: var(--ink); transform: translateY(-2px) rotate(-2deg); box-shadow: 0 4px 0 var(--ink); }
+  #who button.on b { text-shadow: none; }
+  .icons { grid-area: icons; justify-self: end; display: flex; gap: 8px; }
+  .ibtn {
+    position: relative; width: 46px; height: 46px; border-radius: 14px; font-size: 21px; line-height: 1;
+    background: rgba(20, 18, 31, 0.5); border: 2px solid rgba(255, 255, 255, 0.8);
+    display: grid; place-items: center; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  }
+  .ibtn.on { background: var(--violet); }
+  .ibtn i { position: absolute; top: -7px; right: -7px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--pink); border: 2px solid #fff; font: 700 11px/16px system-ui, sans-serif; font-style: normal; }
+  #motionBtn { animation: wiggle 1.6s ease-in-out infinite; background: var(--pink); }
+  @keyframes wiggle { 0%, 70%, 100% { transform: rotate(0); } 75% { transform: rotate(-14deg); } 85% { transform: rotate(14deg); } 95% { transform: rotate(-8deg); } }
+
+  /* ---------- speech bubbles ---------- */
+  #bubbles { position: fixed; left: 0; right: 0; top: 90px; z-index: 6; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left)); pointer-events: none; }
+  .bubble {
+    display: flex; align-items: center; gap: 10px; max-width: min(470px, 40vw); padding: 8px 16px 8px 8px;
+    background: #fff; color: var(--ink); border: 4px solid var(--ink); border-radius: 24px; box-shadow: 0 6px 0 var(--ink), 0 12px 26px rgba(0, 0, 0, 0.3);
+    animation: bubblePop 0.4s cubic-bezier(.3, 1.7, .5, 1);
+  }
+  .bubble.left { align-self: flex-start; margin-left: 3vw; border-bottom-left-radius: 6px; }
+  .bubble.right { align-self: flex-end; margin-right: 3vw; flex-direction: row-reverse; padding: 8px 8px 8px 16px; border-bottom-right-radius: 6px; text-align: right; }
+  .bubble .face { flex: none; width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--ink); background: radial-gradient(circle at 50% 38%, #fff6d8, #b48cff); }
+  .bubble .words { min-width: 0; }
+  .bubble small { display: block; font-size: 13px; font-weight: 700; opacity: 0.6; font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bubble b { display: block; font-family: var(--display); font-weight: 400; font-size: 13px; letter-spacing: 1px; opacity: 0.75; }
+  .bubble .text { display: block; font-weight: 800; font-size: clamp(19px, 2.3vw, 27px); line-height: 1.15; }
+  .bubble.mood-yes { background: #fff4b8; }
+  .bubble.mood-maybe { background: #d9f6ff; }
+  .bubble.mood-no { background: #ffe0ec; }
+  .bubble.mood-other { background: #efe4ff; }
+  .bubble.buddy .face { width: 50px; height: 50px; }
+  .bubble.buddy .text { font-size: clamp(16px, 2vw, 22px); }
+  @keyframes bubblePop { from { transform: scale(0.4) rotate(-4deg); opacity: 0; } }
+  .asked {
+    align-self: center; max-width: min(560px, 90vw); padding: 6px 16px; border-radius: 16px; background: rgba(20, 18, 31, 0.6); border: 2px solid rgba(255, 255, 255, 0.6);
+    font-weight: 800; font-size: clamp(16px, 2vw, 21px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; animation: bubblePop 0.3s ease-out;
+  }
+  body.portrait .bubble { align-self: center; margin: 0; max-width: calc(100vw - 24px); flex-direction: row; padding: 6px 14px 6px 6px; text-align: left; border-radius: 22px; }
+  body.portrait .bubble .face { width: 50px; height: 50px; }
+  body.portrait .bubble.buddy .face { width: 42px; height: 42px; }
+  body.portrait .bubble .text { font-size: 19px; }
+  body.portrait .bubble.buddy .text { font-size: 16px; }
+
+  /* ---------- "tap me" hint near the ball ---------- */
+  #hint {
+    position: fixed; left: 0; top: 0; z-index: 4; pointer-events: none; font-family: var(--display); font-size: 17px; white-space: nowrap;
+    color: #fff; text-shadow: 0 3px 0 var(--ink); -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill;
+  }
+  #hint span { display: inline-block; animation: hintBob 1s ease-in-out infinite; }
+  #hint.gone { display: none; }
+  @keyframes hintBob { 50% { transform: translate(-6px, -8px) rotate(-8deg); } }
+
+  /* ---------- footer: question box, shake button, the companion ---------- */
+  #bottom {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+    display: grid; grid-template-columns: minmax(0, 440px) auto auto; grid-template-areas: "q shake buddy" "howto howto howto";
+    justify-content: center; align-items: center; gap: 8px 10px;
+    padding: 8px max(14px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+    background: linear-gradient(180deg, rgba(20, 10, 50, 0), rgba(20, 10, 50, 0.55) 40%);
+  }
+  #q {
+    grid-area: q; width: 100%; min-width: 0; height: 58px; padding: 0 18px; border-radius: 20px; border: 4px solid var(--ink);
+    font: 700 19px 'Rubik', system-ui, sans-serif; color: var(--ink); background: #fff; box-shadow: 0 5px 0 var(--ink); outline: none;
+    user-select: text; -webkit-user-select: text; touch-action: manipulation;
+  }
+  #q::placeholder { color: #8c84a8; }
+  #q:focus { border-color: var(--violet); box-shadow: 0 5px 0 var(--ink), 0 0 0 4px rgba(180, 140, 255, 0.5); }
+  .btn {
+    grid-area: shake; height: 58px; padding: 0 22px; white-space: nowrap;
+    font-family: var(--display); font-size: 22px; color: var(--ink);
+    background: var(--yellow); border: 4px solid var(--ink); border-radius: 20px;
+    box-shadow: 0 6px 0 var(--ink), 0 12px 24px rgba(0, 0, 0, 0.3); transition: transform 0.08s, box-shadow 0.08s;
+  }
+  .btn:hover { background: #ffe03d; }
+  .btn:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--ink); }
+  .buddybtn {
+    grid-area: buddy; display: flex; align-items: center; gap: 8px; height: 70px; padding: 4px 14px 4px 5px; border-radius: 22px;
+    background: linear-gradient(135deg, #ffb02e, #ff7a1a); border: 3px solid #fff; box-shadow: 0 5px 0 var(--ink); text-align: left;
+  }
+  .buddybtn img { width: 58px; height: 58px; border-radius: 16px; background: radial-gradient(circle at 50% 35%, #fff3d0, #ffb02e); }
+  .buddybtn b { display: block; font-family: var(--display); font-weight: 400; font-size: 15px; text-shadow: 0 2px 0 var(--ink); }
+  .buddybtn small { display: block; font-weight: 800; font-size: 12px; opacity: 0.95; }
+  .buddybtn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+  .buddybtn.here { animation: glow 1.1s ease-in-out infinite; border-color: var(--yellow); }
+  @keyframes glow { 50% { box-shadow: 0 0 24px 6px rgba(255, 212, 0, 0.85), 0 5px 0 var(--ink); } }
+  .howto { grid-area: howto; text-align: center; font-weight: 700; font-size: 14px; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8); opacity: 0.92; }
+  .howto #turn:not(:empty) { color: var(--yellow); font-family: var(--display); font-weight: 400; margin-right: 6px; }
+  .howto #turn:not(:empty)::after { content: ' ·'; color: #fff; }
+  @media (hover: none) { .keys { display: none; } }
+  @media (hover: hover) { .touchonly { display: none; } }
+
+  /* ---------- history ---------- */
+  #history {
+    position: fixed; left: max(10px, env(safe-area-inset-left)); top: 50%; transform: translateY(-50%); z-index: 9;
+    width: min(340px, calc(100vw - 20px)); max-height: min(560px, 74vh); display: flex; flex-direction: column;
+    background: rgba(24, 14, 60, 0.94); border: 3px solid #fff; border-radius: 22px; box-shadow: 0 8px 0 var(--ink), 0 18px 40px rgba(0, 0, 0, 0.45);
+    animation: slideIn 0.25s ease-out;
+  }
+  @keyframes slideIn { from { transform: translate(-30px, -50%); opacity: 0; } }
+  #history header { display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 8px 16px; }
+  #history h2 { font-family: var(--display); font-weight: 400; font-size: 18px; color: var(--yellow); text-shadow: 0 2px 0 var(--ink); }
+  #history ol { list-style: none; overflow-y: auto; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; touch-action: pan-y; }
+  #history li { display: flex; gap: 10px; align-items: flex-start; padding: 8px; border-radius: 14px; background: rgba(255, 255, 255, 0.08); border-left: 6px solid var(--violet); }
+  #history li.mood-yes { border-left-color: var(--yellow); }
+  #history li.mood-maybe { border-left-color: var(--cyan); }
+  #history li.mood-no { border-left-color: var(--pink); }
+  #history li.empty { border: 0; opacity: 0.8; font-weight: 700; }
+  #history li img { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff; background: radial-gradient(circle at 50% 38%, #fff6d8, #b48cff); }
+  #history li small { display: block; font-weight: 700; font-size: 13px; opacity: 0.75; }
+  #history li b { display: block; font-weight: 800; font-size: 16px; line-height: 1.2; }
+  #history li i { display: block; font-size: 13px; font-weight: 700; color: #ffd38a; margin-top: 3px; }
+
+  /* ---------- toasts ---------- */
+  #toasts { position: fixed; left: 50%; top: 40%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; z-index: 8; }
+  .toast {
+    font-family: var(--display); font-size: clamp(24px, 4.6vw, 40px); color: var(--yellow); max-width: 92vw; text-align: center; white-space: nowrap;
+    -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink);
+    animation: toast 1.3s ease-out forwards;
+  }
+  @keyframes toast {
+    0% { transform: scale(0.3) rotate(-6deg); opacity: 0; }
+    15% { transform: scale(1.15) rotate(-3deg); opacity: 1; }
+    25% { transform: scale(1) rotate(-3deg); }
+    80% { opacity: 1; }
+    100% { transform: translateY(-30px) rotate(-3deg); opacity: 0; }
+  }
+
+  /* ---------- narrow screens (phones in portrait) ---------- */
+  @media (max-width: 700px) {
+    #top { grid-template-columns: 1fr auto; grid-template-areas: "logo icons" "who who"; }
+    #who { justify-self: center; }
+    #bottom { grid-template-columns: 1fr auto; grid-template-areas: "q q" "shake buddy" "howto howto"; justify-content: stretch; }
+    .btn { width: 100%; }
+  }
+  @media (max-width: 400px) {
+    #who button { min-width: 64px; padding: 3px 5px 4px; }
+    #who img { width: 46px; height: 46px; }
+    #who .duo img { width: 38px; height: 38px; }
+    .ibtn { width: 42px; height: 42px; font-size: 19px; }
+    .btn { font-size: 19px; padding: 0 12px; }
+    .buddybtn { height: 62px; padding-right: 10px; }
+    .buddybtn img { width: 50px; height: 50px; }
+    .howto { font-size: 12px; }
+  }
+  @media (max-height: 520px) and (min-width: 701px) {
+    #who img { width: 40px; height: 40px; }
+    #who .duo img { width: 34px; height: 34px; }
+    #q, .btn { height: 48px; }
+    .buddybtn { height: 56px; }
+    .buddybtn img { width: 46px; height: 46px; }
+    .howto { display: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="The magic 8-ball with Teddy and Tommy"></canvas>
+<canvas id="confetti"></canvas>
+
+<header id="top">
+  <div class="logo"><span class="l1" id="logo1">Magic 8</span><span class="l2" id="logo2">Teddy &amp; Tommy</span></div>
+  <div id="who" role="radiogroup" aria-label="Who answers?">
+    <button data-who="teddy" role="radio" title="Teddy answers (1)"><img id="whoTeddy" alt=""><b>TEDDY</b></button>
+    <button data-who="both" role="radio" title="They take turns (2)"><span class="duo"><img id="whoBoth1" alt=""><img id="whoBoth2" alt=""></span><b>BOTH</b></button>
+    <button data-who="tommy" role="radio" title="Tommy answers (3)"><img id="whoTommy" alt=""><b>TOMMY</b></button>
+  </div>
+  <div class="icons">
+    <button id="motionBtn" class="ibtn hidden" title="Turn on shaking: shake your iPad or phone to ask" aria-label="Turn on shake to ask">📳</button>
+    <button id="histBtn" class="ibtn" title="Last questions (H)" aria-label="Last questions">📜<i id="histCount" class="hidden"></i></button>
+    <button id="muteBtn" class="ibtn" title="Sound and voice on/off (M)" aria-label="Sound on or off">🔊</button>
+  </div>
+</header>
+
+<div id="bubbles" aria-live="polite"></div>
+<div id="hint"><span>👆 TAP ME!</span></div>
+
+<footer id="bottom">
+  <input id="q" type="text" maxlength="80" placeholder="Ask Teddy &amp; Tommy anything…" enterkeyhint="go" autocomplete="off" autocorrect="on" spellcheck="false" aria-label="Your question">
+  <button id="askBtn" class="btn">🎱 SHAKE!</button>
+  <button id="buddyBtn" class="buddybtn"><img id="buddyFace" alt=""><span><b id="buddyName">TOMMY</b><small>2nd opinion!</small></span></button>
+  <div class="howto"><span id="turn"></span>Tap or drag the ball<span class="keys"> · <kbd>Space</kbd> shakes · <kbd>T</kbd> calls <span id="buddyKey">Tommy</span></span><span class="touchonly"> · or shake the iPad / phone</span></div>
+</footer>
+
+<aside id="history" class="hidden" aria-label="Last questions">
+  <header><h2>📜 Last questions</h2><button id="histClose" class="ibtn" aria-label="Close">✖</button></header>
+  <ol id="histList"></ol>
+</aside>
+<div id="toasts"></div>
+
+<script src="kit/three.min.js"></script>
+<script src="kit/gfx.js"></script>
+<script src="kit/people.js"></script>
+<script src="kit/roster.js"></script>
+<script src="kit/portraits.js"></script>
+<script src="kit/sound.js"></script>
+<script src="js/answers.js"></script>
+<script src="js/voices.js"></script>
+<script src="js/poses.js"></script>
+<script src="js/ball.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/actor.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
