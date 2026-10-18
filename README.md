@@ -6,7 +6,9 @@ The name lives in one place, [js/title.js](js/title.js), so it's easy to rename.
 
 ## Play
 
-Open `index.html` by double-click, or send `dist/magic-8-teddy.html` (one file, everything inside) to an iPad or phone. Both work offline.
+Online: **https://adong.github.io/magic-8-teddy/**
+
+Or open `index.html` by double-click, or send `dist/magic-8-teddy.html` (one file, everything inside) to an iPad or phone. Both work offline.
 
 | Do this | What happens |
 |---|---|
