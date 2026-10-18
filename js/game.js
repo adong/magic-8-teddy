@@ -671,6 +671,7 @@
     words.className = 'words';
     if (asked) {
       const sm = document.createElement('small');
+      sm.setAttribute('data-no-lang', ''); // the question as the kids typed it, in any language
       sm.textContent = `“${asked}”`;
       words.appendChild(sm);
     }
@@ -695,6 +696,7 @@
   function showAsked(text) {
     const el = document.createElement('div');
     el.className = 'asked';
+    el.setAttribute('data-no-lang', ''); // as typed
     el.textContent = `“${text}”`;
     $('bubbles').prepend(el);
     setTimeout(() => el.remove(), 2600);
@@ -727,6 +729,7 @@
       img.src = thumbs[h.who] || '';
       const box = document.createElement('div');
       const q = document.createElement('small');
+      if (h.q) q.setAttribute('data-no-lang', ''); // as typed
       q.textContent = h.q ? `“${h.q}”` : '🤫 a secret question';
       const a = document.createElement('b');
       a.textContent = h.a;
@@ -1054,6 +1057,7 @@
     applyWho();
     layout();
     renderHistory();
+    if (Kit.lang) Kit.lang.onChange(() => ball.retext()); // the answer triangle is drawn on a canvas
     setupMotion();
     window.addEventListener('resize', layout);
     window.addEventListener('orientationchange', () => setTimeout(layout, 200));

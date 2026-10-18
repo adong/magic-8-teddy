@@ -4,7 +4,8 @@
      root       - put it in the scene and set root.position (the ball's centre); radius R = 1
      shake(on)  - start/stop shaking: it wobbles and spins, the liquid goes murky and the bubbles swirl.
                   Stopping turns the window toward the camera.
-     reveal(text, mood) - the triangle with `text` floats up out of the murk
+     reveal(text, mood) - the triangle with `text` (in 中文 when Kit.lang says so) floats up out of the murk
+     retext()   - redraw the triangle's text after the language changes
      sink()     - the triangle sinks back into the liquid
      showEight()- turn back to the "8" side
      drag(x, y) - offset the ball (world units) while it's being dragged; drag(0, 0) lets it spring back
@@ -92,8 +93,26 @@
   const TRI = { size: 512, top: 16, base: 376, half: 207.8 }; // circumcentre at the canvas centre, radius 240
   const triFont = (px) => `800 ${px}px "Rubik", "Arial Rounded MT Bold", ${FONT}, ${EMOJI_FONT}`;
 
+  // The pieces a line can break between: English words (split at spaces), and single Chinese characters, which can
+  // break anywhere (their punctuation stays with the character before it). Each piece knows if a space comes first.
+  const CJK = '\\u2e80-\\u9fff\\uf900-\\ufaff';
+  const PIECE = new RegExp(`\\s+|[${CJK}][\\u3000-\\u303f\\uff00-\\uffef\\u2026\\u2014]*|[^\\s${CJK}]+`, 'g');
+  function pieces(text) {
+    const out = [];
+    let space = false;
+    for (const m of String(text).match(PIECE) || []) {
+      if (/^\s+$/.test(m)) {
+        space = true;
+        continue;
+      }
+      out.push({ s: m, space: space && out.length > 0 });
+      space = false;
+    }
+    return out;
+  }
+
   // Greedy wrap where each line may only be as wide as the triangle is at that height.
-  function fitText(g, words) {
+  function fitText(g, parts) {
     for (let px = 72; px >= 22; px -= 2) {
       g.font = triFont(px);
       const lh = px * 1.08;
@@ -101,21 +120,26 @@
         const top = 272 - (n * lh) / 2; // the block sits a little below centre, where the triangle is wide
         if (top - 6 < 104) break;
         const lines = [];
-        let wi = 0, ok = true;
-        for (let i = 0; i < n && wi < words.length; i++) {
+        let pi = 0, ok = true;
+        for (let i = 0; i < n && pi < parts.length; i++) {
           const yTop = top + i * lh;
           const w = ((yTop - TRI.top) / (TRI.base - TRI.top)) * TRI.half * 2 - 34;
-          let line = words[wi];
+          let line = parts[pi].s;
           if (g.measureText(line).width > w) { ok = false; break; }
-          wi++;
-          while (wi < words.length && g.measureText(line + ' ' + words[wi]).width <= w) line += ' ' + words[wi++];
+          pi++;
+          while (pi < parts.length) {
+            const next = line + (parts[pi].space ? ' ' : '') + parts[pi].s;
+            if (g.measureText(next).width > w) break;
+            line = next;
+            pi++;
+          }
           lines.push(line);
         }
-        if (ok && wi >= words.length && top + lines.length * lh < TRI.base - 10) return { px, lh, top, lines };
+        if (ok && pi >= parts.length && top + lines.length * lh < TRI.base - 10) return { px, lh, top, lines };
       }
     }
     g.font = triFont(22);
-    return { px: 22, lh: 24, top: 200, lines: [words.join(' ')] };
+    return { px: 22, lh: 24, top: 200, lines: [parts.map((p, i) => (i && p.space ? ' ' : '') + p.s).join('')] };
   }
 
   function drawTriangle(g, text) {
@@ -149,8 +173,9 @@
     path();
     g.stroke();
     if (!text) return;
-    const words = String(text).toUpperCase().split(/\s+/).filter(Boolean);
-    const f = fitText(g, words);
+    // in 中文 the answer comes from the game's dictionary (Kit.lang); English is shouted, like a real 8-ball
+    const shown = Kit.lang ? Kit.lang.t(String(text)) : String(text);
+    const f = fitText(g, pieces(shown.toUpperCase()));
     g.font = triFont(f.px);
     g.textAlign = 'center';
     g.textBaseline = 'middle';
@@ -259,6 +284,7 @@
     }
 
     function reveal(text, mood) {
+      st.text = text;
       drawTriangle(triCtx, text);
       triTex.needsUpdate = true;
       st.triGoal = 1;
@@ -267,6 +293,13 @@
       st.glowGoal.set(MOOD_GLOW[mood] || MOOD_GLOW.idle);
       st.flash = 1;
       if (st.face !== 'window') aim('window', false);
+    }
+
+    // redraw the triangle's text (the language changed)
+    function retext() {
+      if (!st.text) return;
+      drawTriangle(triCtx, st.text);
+      triTex.needsUpdate = true;
     }
 
     function sink() {
@@ -382,7 +415,7 @@
     }
 
     return {
-      root, R, update, shake, reveal, sink, showEight, drag, jolt, hit,
+      root, R, update, shake, reveal, retext, sink, showEight, drag, jolt, hit,
       get face() { return st.face; },
       get shaking() { return st.shaking; },
       get triangle() { return st.tri; },
