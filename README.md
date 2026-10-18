@@ -2,6 +2,8 @@
 
 [![Magic 8: Teddy & Tommy title screen](docs/screenshot.jpg)](https://adong.github.io/magic-8-teddy/)
 
+Press **?** any time (or tap the round **?** button on the left edge) to see the keys. The game waits while you look.
+
 A glossy 3D magic 8-ball starring Teddy and Tommy. Ask it anything (or just shake it), and the brother you picked shakes the ball, waits for the blue triangle to float up through the liquid, then reacts: his signature move for a YES, a shrug for a maybe, and a playful head shake for a no. Answers are read aloud in the brothers' voices.
 
 The name lives in one place, [js/title.js](js/title.js), so it's easy to rename. "Magic 8: Teddy & Tommy" is a working title.
